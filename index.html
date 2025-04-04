@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DIMENZE</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            cursor: none;
+        }
+
+        .cursor {
+            position: fixed;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.8);
+            pointer-events: none;
+            z-index: 9999;
+            mix-blend-mode: difference;
+            transition: transform 0.1s ease;
+        }
+
+        body {
+            font-family: 'Space Mono', monospace;
+            background-color: #0a0a0a;
+            color: #ffffff;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            perspective: 1000px;
+        }
+
+        .dimension-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            transition: transform 1.2s cubic-bezier(0.645, 0.045, 0.355, 1);
+            transform-style: preserve-3d;
+        }
+
+        .dimension {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            backface-visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.8s ease;
+            overflow: hidden;
+        }
+        
+        .dimension.active {
+            opacity: 1;
+        }
+
+        #dimension-1 {
+            background: linear-gradient(135deg, #000000, #1a1a2e);
+            transform: translateZ(0);
+        }
+
+        #dimension-1 h1 {
+            font-size: 12vw;
+            letter-spacing: -0.5vw;
+            margin-bottom: 2rem;
+            animation: float 5s infinite alternate;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+            transition: all 0.5s ease;
+            cursor: pointer;
+        }
+
+        #dimension-1 h1:hover {
+            letter-spacing: 1vw;
+            color: #ff3366;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(0) rotate(0deg);
+            }
+            100% {
+                transform: translateY(-30px) rotate(3deg);
+            }
+        }
+
+        #dimension-2 {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            transform: rotateY(90deg) translateZ(50vw);
+        }
+
+        #dimension-2 .content {
+            max-width: 70%;
+            position: relative;
+        }
+
+        #dimension-2 p {
+            font-size: calc(1rem + 0.5vw);
+            line-height: 1.6;
+            margin-bottom: 1rem;
+            position: relative;
+            transform: translateX(0);
+            transition: transform 0.5s ease, color 0.3s ease;
+        }
+
+        #dimension-2 p:hover {
+            transform: translateX(20px);
+            color: #64ffda;
+        }
+
+        #dimension-3 {
+            background: linear-gradient(135deg, #16213e, #0f3460);
+            transform: rotateY(180deg) translateZ(0);
+            position: relative;
+        }
+
+        .interactive-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            grid-template-rows: repeat(6, 1fr);
+            width: 80vmin;
+            height: 80vmin;
+            gap: 10px;
+            transform-style: preserve-3d;
+            perspective: 1000px;
+        }
+
+        .grid-item {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .grid-item:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+            transform: translateZ(20px);
+        }
+
+        .navigation {
+            position: absolute;
+            bottom: 40px;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            z-index: 100;
+        }
+
+        .nav-item {
+            height: 30px;
+            width: 30px;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .nav-item:hover {
+            border-color: white;
+            transform: scale(1.2);
+        }
+
+        .nav-item.active {
+            background-color: white;
+        }
+
+        .secret-nav {
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            z-index: -1;
+            display: flex;
+            justify-content: space-between;
+            pointer-events: none;
+        }
+
+        .secret-nav-area {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.3s ease;
+            pointer-events: auto;
+        }
+
+        .secret-nav-area span {
+            opacity: 0;
+            font-size: 15vw;
+            transition: opacity 0.3s ease;
+            color: rgba(255, 255, 255, 0.1);
+            font-weight: bold;
+        }
+
+        .secret-nav-area:hover span {
+            opacity: 1;
+        }
+
+        .floating-word {
+            position: absolute;
+            font-size: calc(1rem + 2vw);
+            white-space: nowrap;
+            opacity: 0.7;
+            animation: floatAround 15s infinite linear;
+            user-select: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .floating-word:hover {
+            opacity: 1;
+            text-shadow: 0 0 10px white;
+            transform: scale(1.2);
+        }
+
+        @keyframes floatAround {
+            0% {
+                transform: translate(0, 0) rotate(0deg);
+            }
+            25% {
+                transform: translate(30%, 20%) rotate(5deg);
+            }
+            50% {
+                transform: translate(0, 40%) rotate(0deg);
+            }
+            75% {
+                transform: translate(-30%, 20%) rotate(-5deg);
+            }
+            100% {
+                transform: translate(0, 0) rotate(0deg);
+            }
+        }
+
+        .distortion-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.1),
+                rgba(0, 0, 0, 0.1) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+            opacity: 0;
+            z-index: 10;
+        }
+
+        .glitch-button {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+
+        .glitch-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .glitch-effect {
+            animation: glitch 0.5s linear;
+        }
+
+        @keyframes glitch {
+            0% {
+                transform: translate(0);
+                filter: hue-rotate(0deg);
+            }
+            20% {
+                transform: translate(-10px, 5px);
+                filter: hue-rotate(90deg);
+            }
+            40% {
+                transform: translate(10px, -5px);
+                filter: hue-rotate(180deg);
+            }
+            60% {
+                transform: translate(-5px, 10px);
+                filter: hue-rotate(270deg);
+            }
+            80% {
+                transform: translate(5px, -10px);
+                filter: hue-rotate(360deg);
+            }
+            100% {
+                transform: translate(0);
+                filter: hue-rotate(0deg);
+            }
+        }
+
+        .gravity-toggle {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+
+        .gravity-toggle:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .reversed-gravity .floating-word {
+            animation-direction: reverse;
+        }
+
+        .color-shift {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+
+        .color-shift:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .info-panel {
+            position: absolute;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            max-width: 600px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            pointer-events: none;
+            z-index: 200;
+            text-align: center;
+        }
+
+        .info-panel.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .info-toggle {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            width: 30px;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+
+        .info-toggle:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .particles-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .particle {
+            position: absolute;
+            width: 5px;
+            height: 5px;
+            background: white;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        @media (max-width: 768px) {
+            #dimension-1 h1 {
+                font-size: 15vw;
+            }
+            
+            .interactive-grid {
+                grid-template-columns: repeat(4, 1fr);
+                grid-template-rows: repeat(4, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="cursor"></div>
+    <div class="distortion-overlay"></div>
+    <div class="particles-container"></div>
+    
+    <button class="glitch-button">Glitch</button>
+    <button class="gravity-toggle">Přepnout gravitaci</button>
+    <button class="color-shift">Změnit barvy</button>
+    <div class="info-toggle">i</div>
+    
+    <div class="info-panel">
+        <h3>Experimentální web "DIMENZE"</h3>
+        <p>Tato webová stránka zkoumá možnosti netradičního webdesignu a interakce.</p>
+        <p>Navigujte mezi dimenzemi pomocí teček dole, tajné navigace po stranách nebo kolečkem myši.</p>
+        <p>Zkuste:</p>
+        <p>- Klikat na plovoucí slova</p>
+        <p>- Stisknout mezerník pro generování částic</p>
+        <p>- Přepnout gravitaci a měnit barvy</p>
+        <p>- Použít tlačítko Glitch pro vizuální efekt</p>
+    </div>
+    
+    <div class="dimension-container">
+        <div id="dimension-1" class="dimension active">
+            <h1>DIMENZE</h1>
+            <div class="floating-word" style="top: 30%; left: 20%; animation-delay: -2s; font-size: 1.8vw;">nestálost</div>
+            <div class="floating-word" style="top: 50%; left: 70%; animation-delay: -5s; font-size: 3.2vw;">vnímání</div>
+            <div class="floating-word" style="top: 70%; left: 40%; animation-delay: -8s; font-size: 2.5vw;">prostor</div>
+            <div class="floating-word" style="top: 20%; left: 60%; animation-delay: -3s; font-size: 2vw;">pohyb</div>
+            <div class="floating-word" style="top: 60%; left: 10%; animation-delay: -6s; font-size: 3vw;">smysly</div>
+        </div>
+        
+        <div id="dimension-3" class="dimension">
+            <h2 style="font-size: 4vw; margin-bottom: 2rem;">INTERAKCE</h2>
+            <div class="interactive-grid">
+            </div>
+        </div>
+    </div>
+    
+    <div class="navigation">
+        <div class="nav-item active" data-dimension="1"></div>
+        <div class="nav-item" data-dimension="3"></div>
+    </div>
+    
+    <div class="secret-nav">
+        <div class="secret-nav-area" data-dimension="1"><span>1</span></div>
+        <div class="secret-nav-area" data-dimension="2"><span>2</span></div>
+        <div class="secret-nav-area" data-dimension="3"><span>3</span></div>
+    </div>
+
+    <script>
+        const cursor = document.querySelector('.cursor');
+        const container = document.querySelector('.dimension-container');
+        const dimensions = document.querySelectorAll('.dimension');
+        const navItems = document.querySelectorAll('.nav-item');
+        const secretNavItems = document.querySelectorAll('.secret-nav-area');
+        const distortionOverlay = document.querySelector('.distortion-overlay');
+        const glitchButton = document.querySelector('.glitch-button');
+        const gravityToggle = document.querySelector('.gravity-toggle');
+        const colorShift = document.querySelector('.color-shift');
+        const floatingWords = document.querySelectorAll('.floating-word');
+        const infoToggle = document.querySelector('.info-toggle');
+        const infoPanel = document.querySelector('.info-panel');
+        const particlesContainer = document.querySelector('.particles-container');
+        const body = document.querySelector('body');
+        
+        let isGravityReversed = false;
+        let currentDimension = 1;
+        let isMouseDown = false;
+        let bgColors = [
+            ['#000000', '#1a1a2e'],
+            ['#1a1a2e', '#16213e'],
+            ['#16213e', '#0f3460']
+        ];
+        
+        let colorSchemes = [
+            [['#000000', '#1a1a2e'], ['#1a1a2e', '#16213e'], ['#16213e', '#0f3460']],
+            [['#1a0a2e', '#4a1942'], ['#4a1942', '#893168'], ['#893168', '#c83f49']],
+            [['#012030', '#13678A'], ['#13678A', '#45C4B0'], ['#45C4B0', '#9AEBA3']],
+            [['#362023', '#5A3D5C'], ['#5A3D5C', '#80646D'], ['#80646D', '#CDC7E5']]
+        ];
+        
+        let currentColorScheme = 0;
+        
+        document.addEventListener('mousemove', (e) => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+            
+            const hoverElements = document.querySelectorAll('.nav-item, .grid-item, .floating-word, p, button, .info-toggle, h1');
+            let isHovering = false;
+            
+            hoverElements.forEach(element => {
+                const rect = element.getBoundingClientRect();
+                if (
+                    e.clientX >= rect.left &&
+                    e.clientX <= rect.right &&
+                    e.clientY >= rect.top &&
+                    e.clientY <= rect.bottom
+                ) {
+                    cursor.style.transform = 'scale(1.5)';
+                    isHovering = true;
+                }
+            });
+            
+            if (!isHovering) {
+                cursor.style.transform = 'scale(1)';
+            }
+            
+            if (isMouseDown) {
+                createParticle(e.clientX, e.clientY);
+            }
+        });
+        
+        document.addEventListener('mousedown', () => {
+            isMouseDown = true;
+        });
+        
+        document.addEventListener('mouseup', () => {
+            isMouseDown = false;
+        });
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                for (let i = 0; i < 20; i++) {
+                    setTimeout(() => {
+                        const x = Math.random() * window.innerWidth;
+                        const y = Math.random() * window.innerHeight;
+                        createParticle(x, y);
+                    }, i * 50);
+                }
+            }
+        });
+        
+        const grid = document.querySelector('.interactive-grid');
+        for (let i = 0; i < 36; i++) {
+            const item = document.createElement('div');
+            item.classList.add('grid-item');
+            
+            const randomZ = Math.random() * 40 - 20;
+            item.style.transform = `translateZ(${randomZ}px)`;
+            
+            item.addEventListener('mouseover', () => {
+                item.style.transform = 'translateZ(50px)';
+                item.style.backgroundColor = `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 0.5)`;
+            });
+            
+            item.addEventListener('mouseout', () => {
+                item.style.transform = `translateZ(${randomZ}px)`;
+                item.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+            });
+            
+            item.addEventListener('click', () => {
+                item.style.transform = `rotate(${Math.random() * 360}deg) translateZ(${Math.random() * 100}px)`;
+                setTimeout(() => {
+                    item.style.transform = `translateZ(${randomZ}px)`;
+                }, 1000);
+            });
+            
+            grid.appendChild(item);
+        }
+        
+        function navigateToDimension(dimensionId) {
+            dimensions.forEach(dim => dim.classList.remove('active'));
+            document.getElementById(`dimension-${dimensionId}`).classList.add('active');
+            
+            navItems.forEach(item => item.classList.remove('active'));
+            document.querySelector(`.nav-item[data-dimension="${dimensionId}"]`).classList.add('active');
+            
+            switch(dimensionId) {
+                case '1':
+                    container.style.transform = 'rotateY(0deg)';
+                    break;
+                case '2':
+                    container.style.transform = 'rotateY(-90deg)';
+                    break;
+                case '3':
+                    container.style.transform = 'rotateY(-180deg)';
+                    break;
+            }
+            
+            distortionOverlay.style.opacity = '1';
+            setTimeout(() => {
+                distortionOverlay.style.opacity = '0';
+            }, 800);
+            
+            currentDimension = parseInt(dimensionId);
+        }
+        
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                navigateToDimension(item.getAttribute('data-dimension'));
+            });
+        });
+        
+        secretNavItems.forEach(item => {
+            item.addEventListener('click', () => {
+                navigateToDimension(item.getAttribute('data-dimension'));
+            });
+        });
+
+        floatingWords.forEach(word => {
+            const randomX = Math.random() * 60 + 20;
+            const randomY = Math.random() * 60 + 20;
+            word.style.left = `${randomX}%`;
+            word.style.top = `${randomY}%`;
+            
+            const randomDuration = 15 + Math.random() * 10;
+            word.style.animationDuration = `${randomDuration}s`;
+            
+            word.addEventListener('click', (e) => {
+                const newWord = document.createElement('div');
+                newWord.classList.add('floating-word');
+                newWord.textContent = word.textContent;
+                newWord.style.top = `${Math.random() * 80 + 10}%`;
+                newWord.style.left = `${Math.random() * 80 + 10}%`;
+                newWord.style.fontSize = `${1 + Math.random() * 2}vw`;
+                newWord.style.animationDuration = `${10 + Math.random() * 15}s`;
+                newWord.style.animationDelay = `-${Math.random() * 10}s`;
+                newWord.style.color = `hsl(${Math.random() * 360}, 70%, 70%)`;
+                
+                document.getElementById('dimension-1').appendChild(newWord);
+                
+                newWord.addEventListener('click', function() {
+                    this.remove();
+                });
+                
+                for (let i = 0; i < 10; i++) {
+                    createParticle(e.clientX, e.clientY);
+                }
+            });
+        });
+
+        document.addEventListener('wheel', (event) => {
+            if (event.deltaY > 0) {
+                currentDimension = currentDimension < 3 ? currentDimension + 1 : 1;
+            } else {
+                currentDimension = currentDimension > 1 ? currentDimension - 1 : 3;
+            }
+            navigateToDimension(currentDimension.toString());
+        });
+
+        document.querySelector('h1').addEventListener('click', () => {
+            document.querySelector('h1').classList.add('glitch-effect');
+            setTimeout(() => {
+                document.querySelector('h1').classList.remove('glitch-effect');
+            }, 500);
+            
+            for (let i = 0; i < 30; i++) {
+                setTimeout(() => {
+                    const x = Math.random() * window.innerWidth;
+                    const y = Math.random() * (window.innerHeight / 2);
+                    createParticle(x, y);
+                }, i * 20);
+            }
+        });
+
+        glitchButton.addEventListener('click', () => {
+            document.querySelectorAll('.dimension.active *').forEach(elem => {
+                elem.classList.add('glitch-effect');
+                setTimeout(() => {
+                    elem.classList.remove('glitch-effect');
+                }, 500);
+            });
+            
+            distortionOverlay.style.opacity = '0.7';
+            setTimeout(() => {
+                distortionOverlay.style.opacity = '0';
+            }, 500);
+        });
+
+        gravityToggle.addEventListener('click', () => {
+            isGravityReversed = !isGravityReversed;
+            body.classList.toggle('reversed-gravity');
+            
+            if (isGravityReversed) {
+                gravityToggle.textContent = 'Normální gravitace';
+            } else {
+                gravityToggle.textContent = 'Přepnout gravitaci';
+            }
+        });
+
+        colorShift.addEventListener('click', () => {
+            currentColorScheme = (currentColorScheme + 1) % colorSchemes.length;
+            const newColors = colorSchemes[currentColorScheme];
+            
+            document.getElementById('dimension-1').style.background = `linear-gradient(135deg, ${newColors[0][0]}, ${newColors[0][1]})`;
+            document.getElementById('dimension-2').style.background = `linear-gradient(135deg, ${newColors[1][0]}, ${newColors[1][1]})`;
+            document.getElementById('dimension-3').style.background = `linear-gradient(135deg, ${newColors[2][0]}, ${newColors[2][1]})`;
+            
+            floatingWords.forEach(word => {
+                word.style.color = `hsl(${Math.random() * 360}, 70%, 70%)`;
+            });
+        });
+
+        infoToggle.addEventListener('click', () => {
+            infoPanel.classList.toggle('active');
+        });
+
+        function createParticle(x, y) {
+            const particle = document.createElement('div');
+            particle.classList.add('particle');
+            
+            const size = Math.random() * 5 + 2;
+            particle.style.width = `${size}px`;
+            particle.style.height = `${size}px`;
+            
+            particle.style.left = `${x}px`;
+            particle.style.top = `${y}px`;
+            
+            const hue = Math.random() * 360;
+            particle.style.backgroundColor = `hsl(${hue}, 100%, 70%)`;
+            
+            const animDuration = Math.random() * 2 + 1;
+            particle.style.animation = `${isGravityReversed ? 'particleUp' : 'particleDown'} ${animDuration}s ease-out forwards`;
+            
+            particlesContainer.appendChild(particle);
+            
+            setTimeout(() => {
+                particle.remove();
+            }, animDuration * 1000);
+        }
+
+        const styleSheet = document.styleSheets[0];
+        
+        styleSheet.insertRule(`
+            @keyframes particleDown {
+                0% {
+                    transform: translate(0, 0);
+                    opacity: 1;
+                }
+                100% {
+                    transform: translate(${Math.random() * 100 - 50}px, ${Math.random() * 100 + 50}px);
+                    opacity: 0;
+                }
+            }
+        `, styleSheet.cssRules.length);
+        
+        styleSheet.insertRule(`
+            @keyframes particleUp {
+                0% {
+                    transform: translate(0, 0);
+                    opacity: 1;
+                }
+                100% {
+                    transform: translate(${Math.random() * 100 - 50}px, ${Math.random() * -100 - 50}px);
+                    opacity: 0;
+                }
+            }
+        `, styleSheet.cssRules.length);
+        
+        const titleElement = document.querySelector('h1');
+        titleElement.addEventListener('mousemove', (e) => {
+            const rect = titleElement.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+            
+            const offsetX = (x - centerX) / centerX * 10;
+            const offsetY = (y - centerY) / centerY * 5;
+            
+            titleElement.style.textShadow = `
+                ${offsetX}px ${offsetY}px 20px rgba(255, 255, 255, 0.5)
+            `;
+        });
+        
+        titleElement.addEventListener('mouseleave', () => {
+            titleElement.style.textShadow = '0 0 20px rgba(255, 255, 255, 0.5)';
+        });
+    </script>
+</body>
+</html>
